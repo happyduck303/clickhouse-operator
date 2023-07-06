@@ -2,7 +2,8 @@
 # ===== Builder =====
 # ===================
 
-FROM --platform=${BUILDPLATFORM} golang:1.19 AS builder
+#FROM --platform=${BUILDPLATFORM} golang:1.19 AS builder
+FROM --platform=linux/amd64 golang:1.19 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION
@@ -30,7 +31,9 @@ RUN OPERATOR_BIN=/tmp/clickhouse-operator bash -xe ./dev/go_build_operator.sh
 # ===================
 # == Delve builder ==
 # ===================
-FROM --platform=${BUILDPLATFORM} golang:1.19 AS delve-builder
+
+FROM --platform=linux/amd64 golang:1.19 AS delve-builder
+#FROM --platform=${BUILDPLATFORM} golang:1.19 AS delve-builder
 RUN CGO_ENABLED=0 GO111MODULE=on GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go install -ldflags "-s -w -extldflags '-static'" github.com/go-delve/delve/cmd/dlv@latest && rm -rf /root/.cache/go-build/ /go/pkg/mod/
 
 # ======================
@@ -79,6 +82,7 @@ CMD ["/go/bin/dlv", "--listen=:40001", "--headless=true", "--api-version=2", "ex
 # ===== Image Prod =====
 # ======================
 FROM image-base AS image-prod
+COPY --from=busybox:musl /bin/busybox /bin/busybox
 RUN echo "Building PROD image"
 WORKDIR /
 USER nobody
